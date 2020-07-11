@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/xid"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 
 func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
-
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -29,10 +27,6 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	shasher := sha256.New()
 	shasher.Write(hashedSuppliedPassword)
 	password := hex.EncodeToString(shasher.Sum(nil))
-
-
-
-
 	if user.Password != password {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -59,7 +53,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 	})
 	createRefreshToken(w, creds.Username)
-	fmt.Fprintf(w, "Welcome, %s", creds.Username)
+	w.WriteHeader(http.StatusOK)
 }
 
 func createRefreshToken(w http.ResponseWriter, username string) {
@@ -77,11 +71,10 @@ func createRefreshToken(w http.ResponseWriter, username string) {
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		println(err.Error())
 		return
 	}
 
-	refreshToken := &RefreshToken{Username: username, RefreshTokenID: refreshID, }
+	refreshToken := &RefreshToken{Username: username, RefreshTokenID: refreshID }
 	DB.Where("username=?", username).Delete(&RefreshToken{})
 	DB.Create(refreshToken)
 
@@ -90,7 +83,6 @@ func createRefreshToken(w http.ResponseWriter, username string) {
 		Value: tokenString,
 		Expires: expirationTime,
 	})
-
 }
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +92,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	user := &User{}
 	user.Username = creds.Username
 	user.Email = creds.Email

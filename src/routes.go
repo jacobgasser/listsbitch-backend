@@ -51,7 +51,7 @@ func RefreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshTokenJWT := refreshTokenCookie.String()
+	refreshTokenJWT := refreshTokenCookie.Value
 
 	refreshToken, err := jwt.ParseWithClaims(refreshTokenJWT, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil

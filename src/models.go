@@ -2,13 +2,12 @@ package main
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/rs/xid"
 	"time"
 )
 
 type RefreshToken struct {
 	Username string
-	RefreshTokenID xid.ID
+	RefreshTokenID string
 	UpdatedAt time.Time
 }
 

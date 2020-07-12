@@ -4,10 +4,11 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/xid"
 	"net/http"
+	"os"
 	"time"
 )
 
-var JwtKey = []byte("asdf")
+var JwtKey = []byte(os.Getenv("JWTKEY"))
 
 type Credentials struct {
 	Username string `json:"username"`
@@ -22,7 +23,7 @@ type AuthClaims struct {
 }
 
 type RefreshClaims struct {
-	RefreshId xid.ID `json:"refresh_ID"`
+	RefreshId string `json:"refresh_ID"`
 	jwt.StandardClaims
 }
 
@@ -56,7 +57,7 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 	refreshID := xid.New()
 
 	claims := &RefreshClaims{
-		RefreshId: refreshID,
+		RefreshId: refreshID.String(),
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -69,7 +70,7 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 		return
 	}
 
-	refreshToken := &RefreshToken{Username: creds.Username, RefreshTokenID: refreshID, UpdatedAt: time.Now()}
+	refreshToken := &RefreshToken{Username: creds.Username, RefreshTokenID: refreshID.String(), UpdatedAt: time.Now()}
 	DB.Where("username=?", creds.Username).Delete(&RefreshToken{})
 	DB.Create(refreshToken)
 

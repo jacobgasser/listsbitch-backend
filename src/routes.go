@@ -57,7 +57,7 @@ func RefreshHandler(w http.ResponseWriter, r *http.Request) {
 		return JwtKey, nil
 	})
 	claims, ok := refreshToken.Claims.(*RefreshClaims)
-git 	if !ok || !refreshToken.Valid {
+	if !ok || !refreshToken.Valid {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return

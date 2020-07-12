@@ -16,6 +16,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/login", AuthHandler).Methods("POST")
 	r.HandleFunc("/signup", SignUpHandler).Methods("POST")
+	r.HandleFunc("/refresh", RefreshHandler).Methods("POST")
 	http.Handle("/", r)
 
 	err := godotenv.Load(".env")

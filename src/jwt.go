@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/rs/xid"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"time"
@@ -54,10 +54,10 @@ func SetAuthJWT(w http.ResponseWriter, creds Credentials) {
 
 func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 	expirationTime := time.Now().Add(72 * time.Hour)
-	refreshID := xid.New()
+	refreshID := uuid.New().String()
 
 	claims := &RefreshClaims{
-		RefreshId: refreshID.String(),
+		RefreshId: refreshID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -70,7 +70,7 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 		return
 	}
 
-	refreshToken := &RefreshToken{Username: creds.Username, RefreshTokenID: refreshID.String(), UpdatedAt: time.Now()}
+	refreshToken := &RefreshToken{Username: creds.Username, RefreshTokenID: refreshID, UpdatedAt: time.Now()}
 	DB.Where("username=?", creds.Username).Delete(&RefreshToken{})
 	DB.Create(refreshToken)
 

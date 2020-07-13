@@ -19,3 +19,8 @@ type User struct {
 	Salt string
 	Email string
 }
+
+type List struct {
+	gorm.Model
+
+}

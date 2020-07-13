@@ -117,3 +117,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func CreateListHandler(w http.ResponseWriter, r *http.Request) {
+
+}

@@ -48,8 +48,6 @@ func SetAuthJWT(w http.ResponseWriter, creds Credentials) {
 		Value: tokenString,
 		Expires: expirationTime,
 	})
-	SetRefreshJWT(w, creds)
-	w.WriteHeader(http.StatusOK)
 }
 
 func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {

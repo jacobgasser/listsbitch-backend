@@ -38,6 +38,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	SetAuthJWT(w, creds)
 	SetRefreshJWT(w, creds)
+	w.WriteHeader(http.StatusOK)
 }
 
 func RefreshHandler(w http.ResponseWriter, r *http.Request) {

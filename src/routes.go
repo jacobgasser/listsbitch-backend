@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"time"
 )
@@ -52,38 +50,7 @@ func RefreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshTokenJWT := refreshTokenCookie.Value
-
-	refreshToken, err := jwt.ParseWithClaims(refreshTokenJWT, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return JwtKey, nil
-	})
-	claims, ok := refreshToken.Claims.(*RefreshClaims)
-	if !ok || !refreshToken.Valid {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if !refreshToken.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	OldRefreshTokenEntry := &RefreshToken{}
-	DB.First(&OldRefreshTokenEntry, "refresh_token_id = ?", claims.RefreshId)
-	if OldRefreshTokenEntry.Username == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	creds := Credentials{Username: OldRefreshTokenEntry.Username}
-	SetRefreshJWT(w, creds)
-	SetAuthJWT(w, creds)
+	Refresh(w, refreshTokenCookie.Value)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -120,5 +87,14 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateListHandler(w http.ResponseWriter, r *http.Request) {
-
+	user, status := Verify(w, r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+		return
+	}
+	if user.Username == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

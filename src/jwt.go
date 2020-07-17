@@ -79,3 +79,70 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 	})
 }
 
+func Refresh(w http.ResponseWriter, refreshTokenJWT string) int {
+	refreshToken, err := jwt.ParseWithClaims(refreshTokenJWT, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return JwtKey, nil
+	})
+	claims, ok := refreshToken.Claims.(*RefreshClaims)
+	if !ok || !refreshToken.Valid {
+		return http.StatusUnauthorized
+	}
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return http.StatusUnauthorized
+		}
+		return http.StatusBadRequest
+	}
+	if !refreshToken.Valid {
+		return http.StatusUnauthorized
+	}
+	OldRefreshTokenEntry := &RefreshToken{}
+	DB.First(&OldRefreshTokenEntry, "refresh_token_id = ?", claims.RefreshId)
+	if OldRefreshTokenEntry.Username == "" {
+		return http.StatusUnauthorized
+	}
+	creds := Credentials{Username: OldRefreshTokenEntry.Username}
+	SetRefreshJWT(w, creds)
+	SetAuthJWT(w, creds)
+	return http.StatusOK
+}
+
+func Authenticate(w http.ResponseWriter, authTokenJWT string, user *User) (int) {
+	authToken, err := jwt.ParseWithClaims(authTokenJWT, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return JwtKey, nil
+	})
+	claims, ok := authToken.Claims.(*AuthClaims)
+	if !ok || !authToken.Valid {
+		return http.StatusUnauthorized
+	}
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return http.StatusUnauthorized
+		}
+		return http.StatusBadRequest
+	}
+	if !authToken.Valid {
+		return http.StatusUnauthorized
+	}
+	user.Username = claims.Username
+	return http.StatusOK
+}
+func Verify(w http.ResponseWriter, r *http.Request) (User, int) {
+	user := User{}
+	authTokenCookie, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			refreshTokenCookie, err := r.Cookie("refresh_token")
+			if err != nil {
+				if err == http.ErrNoCookie {
+					return user, http.StatusUnauthorized
+				}
+				return user, http.StatusInternalServerError
+			}
+			return user, Refresh(w, refreshTokenCookie.Value)
+		}
+	}
+	Authenticate(w, authTokenCookie.Value, &user)
+	return user, http.StatusOK
+}
+

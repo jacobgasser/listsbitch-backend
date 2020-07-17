@@ -31,6 +31,8 @@ func main() {
 	DB = db
 	DB.AutoMigrate(&User{})
 	DB.AutoMigrate(&RefreshToken{})
+	DB.AutoMigrate(&List{})
+	DB.AutoMigrate(&ListItem{})
 	defer DB.Close()
 	log.Fatal(http.ListenAndServe(":8080", nil))
 

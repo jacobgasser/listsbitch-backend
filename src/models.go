@@ -22,5 +22,11 @@ type User struct {
 
 type List struct {
 	gorm.Model
+	Author User
+	Title string
+}
 
+type ListItem struct {
+	gorm.Model
+	ListId string
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 )
@@ -50,8 +51,8 @@ func RefreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Refresh(w, refreshTokenCookie.Value)
-	w.WriteHeader(http.StatusOK)
+	status, _ := Refresh(w, refreshTokenCookie.Value)
+	w.WriteHeader(status)
 }
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +68,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	user.Email = creds.Email
 	user.Name = creds.Name
 	user.CreatedAt = time.Now()
+	user.ID = uuid.New().String()
 
 	salt := make([]byte, 8)
 	 _, err = rand.Read(salt)
@@ -94,6 +96,18 @@ func CreateListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if user.Username == "" {
 		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	body := struct {
+		Name string `json:"name"`
+	}{}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := CreateList(user.Username, body.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

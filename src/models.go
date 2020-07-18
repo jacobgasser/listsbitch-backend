@@ -1,9 +1,15 @@
 package main
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
 )
+
+type Model struct {
+	ID        string `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+}
 
 type RefreshToken struct {
 	Username string
@@ -12,7 +18,7 @@ type RefreshToken struct {
 }
 
 type User struct {
-	gorm.Model
+	Model
 	Name string
 	Username string
 	Password string
@@ -21,12 +27,12 @@ type User struct {
 }
 
 type List struct {
-	gorm.Model
-	Author User
+	Model
+	Author string
 	Title string
 }
 
 type ListItem struct {
-	gorm.Model
+	Model
 	ListId string
 }

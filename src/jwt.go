@@ -27,7 +27,7 @@ type RefreshClaims struct {
 	jwt.StandardClaims
 }
 
-func SetAuthJWT(w http.ResponseWriter, creds Credentials) {
+func SetAuthJWT(w http.ResponseWriter, creds Credentials) string {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &AuthClaims{
@@ -47,7 +47,9 @@ func SetAuthJWT(w http.ResponseWriter, creds Credentials) {
 		Name: "token",
 		Value: tokenString,
 		Expires: expirationTime,
+		Path: "/",
 	})
+	return tokenString
 }
 
 func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
@@ -76,35 +78,37 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 		Name: "refresh_token",
 		Value: tokenString,
 		Expires: expirationTime,
+		Path: "/",
 	})
+
 }
 
-func Refresh(w http.ResponseWriter, refreshTokenJWT string) int {
+func Refresh(w http.ResponseWriter, refreshTokenJWT string) (int, string) {
 	refreshToken, err := jwt.ParseWithClaims(refreshTokenJWT, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
 	claims, ok := refreshToken.Claims.(*RefreshClaims)
 	if !ok || !refreshToken.Valid {
-		return http.StatusUnauthorized
+		return http.StatusUnauthorized, ""
 	}
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			return http.StatusUnauthorized
+			return http.StatusUnauthorized, ""
 		}
-		return http.StatusBadRequest
+		return http.StatusBadRequest, ""
 	}
 	if !refreshToken.Valid {
-		return http.StatusUnauthorized
+		return http.StatusUnauthorized, ""
 	}
 	OldRefreshTokenEntry := &RefreshToken{}
 	DB.First(&OldRefreshTokenEntry, "refresh_token_id = ?", claims.RefreshId)
 	if OldRefreshTokenEntry.Username == "" {
-		return http.StatusUnauthorized
+		return http.StatusUnauthorized, ""
 	}
 	creds := Credentials{Username: OldRefreshTokenEntry.Username}
 	SetRefreshJWT(w, creds)
-	SetAuthJWT(w, creds)
-	return http.StatusOK
+	authJWT := SetAuthJWT(w, creds)
+	return http.StatusOK, authJWT
 }
 
 func Authenticate(w http.ResponseWriter, authTokenJWT string, user *User) (int) {
@@ -130,19 +134,27 @@ func Authenticate(w http.ResponseWriter, authTokenJWT string, user *User) (int) 
 func Verify(w http.ResponseWriter, r *http.Request) (User, int) {
 	user := User{}
 	authTokenCookie, err := r.Cookie("token")
+	authToken := ""
+	if authTokenCookie != nil {
+		authToken = authTokenCookie.Value
+	}
 	if err != nil {
 		if err == http.ErrNoCookie {
-			refreshTokenCookie, err := r.Cookie("refresh_token")
-			if err != nil {
-				if err == http.ErrNoCookie {
+			refreshTokenCookie, err2 := r.Cookie("refresh_token")
+			if err2 != nil {
+				if err2 == http.ErrNoCookie {
 					return user, http.StatusUnauthorized
 				}
 				return user, http.StatusInternalServerError
 			}
-			return user, Refresh(w, refreshTokenCookie.Value)
+			status, authJWT := Refresh(w, refreshTokenCookie.Value)
+			if status != http.StatusOK {
+				return user, status
+			}
+			authToken = authJWT
 		}
 	}
-	Authenticate(w, authTokenCookie.Value, &user)
-	return user, http.StatusOK
+	status := Authenticate(w, authToken, &user)
+	return user, status
 }
 

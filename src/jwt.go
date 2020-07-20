@@ -18,7 +18,7 @@ type Credentials struct {
 }
 
 type AuthClaims struct {
-	Username string `json:"username"`
+	UserID string `json:"user_ID"`
 	jwt.StandardClaims
 }
 
@@ -27,11 +27,11 @@ type RefreshClaims struct {
 	jwt.StandardClaims
 }
 
-func SetAuthJWT(w http.ResponseWriter, creds Credentials) string {
+func SetAuthJWT(w http.ResponseWriter, user User) string {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &AuthClaims{
-		Username: creds.Username,
+		UserID: user.ID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -52,7 +52,7 @@ func SetAuthJWT(w http.ResponseWriter, creds Credentials) string {
 	return tokenString
 }
 
-func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
+func SetRefreshJWT(w http.ResponseWriter, user User) {
 	expirationTime := time.Now().Add(72 * time.Hour)
 	refreshID := uuid.New().String()
 
@@ -70,8 +70,8 @@ func SetRefreshJWT(w http.ResponseWriter, creds Credentials) {
 		return
 	}
 
-	refreshToken := &RefreshToken{Username: creds.Username, RefreshTokenID: refreshID, UpdatedAt: time.Now()}
-	DB.Where("username=?", creds.Username).Delete(&RefreshToken{})
+	refreshToken := &RefreshToken{User: user.ID, RefreshTokenID: refreshID, UpdatedAt: time.Now()}
+	DB.Where("user = ?", user.ID).Delete(&RefreshToken{})
 	DB.Create(refreshToken)
 
 	http.SetCookie(w, &http.Cookie{
@@ -101,13 +101,13 @@ func Refresh(w http.ResponseWriter, refreshTokenJWT string) (int, string) {
 		return http.StatusUnauthorized, ""
 	}
 	OldRefreshTokenEntry := &RefreshToken{}
-	DB.First(&OldRefreshTokenEntry, "refresh_token_id = ?", claims.RefreshId)
-	if OldRefreshTokenEntry.Username == "" {
+	if DB.First(&OldRefreshTokenEntry, "refresh_token_id = ?", claims.RefreshId).RecordNotFound() {
 		return http.StatusUnauthorized, ""
 	}
-	creds := Credentials{Username: OldRefreshTokenEntry.Username}
-	SetRefreshJWT(w, creds)
-	authJWT := SetAuthJWT(w, creds)
+	user := User{}
+	user.ID = OldRefreshTokenEntry.User
+	SetRefreshJWT(w, user)
+	authJWT := SetAuthJWT(w, user)
 	return http.StatusOK, authJWT
 }
 
@@ -128,7 +128,7 @@ func Authenticate(w http.ResponseWriter, authTokenJWT string, user *User) (int) 
 	if !authToken.Valid {
 		return http.StatusUnauthorized
 	}
-	user.Username = claims.Username
+	user.ID = claims.UserID
 	return http.StatusOK
 }
 func Verify(w http.ResponseWriter, r *http.Request) (User, int) {

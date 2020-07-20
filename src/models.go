@@ -12,7 +12,7 @@ type Model struct {
 }
 
 type RefreshToken struct {
-	Username string
+	User string
 	RefreshTokenID string
 	UpdatedAt time.Time
 }
@@ -34,5 +34,6 @@ type List struct {
 
 type ListItem struct {
 	Model
-	ListId string
+	ListID string `json:"list_id"`
+	Content string `json:"content"`
 }

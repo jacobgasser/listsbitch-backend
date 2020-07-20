@@ -18,6 +18,8 @@ func main() {
 	r.HandleFunc("/signup", SignUpHandler).Methods("POST")
 	r.HandleFunc("/refresh", RefreshHandler).Methods("POST")
 	r.HandleFunc("/api/lists/create", CreateListHandler).Methods("POST")
+	r.HandleFunc("/api/lists/add", CreateListItemHandler).Methods("PUT")
+	r.HandleFunc("/api/lists/{listID}", GetListItemsHandler).Methods("GET")
 	http.Handle("/", r)
 
 	err := godotenv.Load(".env")

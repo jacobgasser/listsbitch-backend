@@ -160,3 +160,25 @@ func GetListItemsHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
+
+func DeleteListItemHandler(w http.ResponseWriter, r *http.Request) {
+	user, status := Verify(w, r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	vars := mux.Vars(r)
+	listItemID := vars["listItemID"]
+	listItemToDelete := ListItem{}
+	DB.First(&listItemToDelete, "id = ?", listItemID)
+	listHoldingItemToDelete := List{}
+	DB.First(&listHoldingItemToDelete, "id = ?", listItemToDelete.ListID)
+	if listHoldingItemToDelete.Author != user.ID {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	err := DeleteListItem(listItemID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	w.WriteHeader(http.StatusOK)
+}

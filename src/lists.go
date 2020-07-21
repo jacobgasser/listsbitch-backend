@@ -37,3 +37,10 @@ func GetListItems(listID string) ([]ListItem , error) {
 	}
 	return listItems, nil
 }
+
+func DeleteListItem(listItemID string) error {
+	if DB.Where("id = ?", listItemID).Delete(ListItem{}).RecordNotFound() {
+		return fmt.Errorf("lists: no list item with ID of %s exists", listItemID)
+	}
+	return nil
+}

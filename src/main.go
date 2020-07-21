@@ -20,6 +20,7 @@ func main() {
 	r.HandleFunc("/api/lists/create", CreateListHandler).Methods("POST")
 	r.HandleFunc("/api/lists/add", CreateListItemHandler).Methods("PUT")
 	r.HandleFunc("/api/lists/{listID}", GetListItemsHandler).Methods("GET")
+	r.HandleFunc("/api/lists/remove/{listItemID}", DeleteListItemHandler).Methods("DELETE")
 	http.Handle("/", r)
 
 	err := godotenv.Load(".env")

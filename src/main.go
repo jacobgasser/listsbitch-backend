@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -13,6 +14,7 @@ import (
 var DB *gorm.DB
 
 func main() {
+	fmt.Print("Starting Listsbit.ch . . .\n")
 	r := mux.NewRouter()
 	r.HandleFunc("/login", AuthHandler).Methods("POST")
 	r.HandleFunc("/signup", SignUpHandler).Methods("POST")
@@ -29,7 +31,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err := gorm.Open("mysql", os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASSWORD") + "@(" + os.Getenv("DB_HOST") + ")/" + os.Getenv("DB_NAME") + "?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", os.Getenv("DB_USER")+":"+os.Getenv("DB_PASSWORD")+"@("+os.Getenv("DB_HOST")+")/"+os.Getenv("DB_NAME")+"?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		panic(err)
 	}
@@ -39,9 +41,8 @@ func main() {
 	DB.AutoMigrate(&List{})
 	DB.AutoMigrate(&ListItem{})
 	defer DB.Close()
+	
+	fmt.Print("Listsbit.ch is now online!")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
-
 }
-
-

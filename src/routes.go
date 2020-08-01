@@ -85,7 +85,10 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	password.Write(append([]byte(creds.Password), []byte(user.Salt)...))
 	user.Password = hex.EncodeToString(password.Sum(nil))
 
-	DB.Create(&user)
+	if DB.Create(&user).Error != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -149,7 +152,6 @@ func GetListItemsHandler(w http.ResponseWriter, r *http.Request) {
 	for i, v := range listItems {
 		fmt.Printf("ID: %x; Content: %s\n", i, v.Content)
 	}
-	w.WriteHeader(http.StatusOK)
 	listItemsJSON, err := json.Marshal(listItems)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -161,10 +163,11 @@ func GetListItemsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteListItemHandler(w http.ResponseWriter, r *http.Request) {
+func RemoveListItemHandler(w http.ResponseWriter, r *http.Request) {
 	user, status := Verify(w, r)
 	if status != http.StatusOK {
 		w.WriteHeader(status)
+		return
 	}
 	vars := mux.Vars(r)
 	listItemID := vars["listItemID"]
@@ -179,6 +182,50 @@ func DeleteListItemHandler(w http.ResponseWriter, r *http.Request) {
 	err := DeleteListItem(listItemID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteListHandler(w http.ResponseWriter, r *http.Request) {
+	user, status := Verify(w, r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+		return
+	}
+	vars := mux.Vars(r)
+	listID := vars["listID"]
+	listToDelete := List{}
+	if DB.First(&listToDelete, "id = ?", listID).RecordNotFound() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if listToDelete.Author != user.ID {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	err := DeleteList(listID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func GetUserListsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID := vars["userID"]
+	lists, err := GetUserLists(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	listsJSON, err := json.Marshal(lists)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = fmt.Fprintf(w, "%s", listsJSON)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }

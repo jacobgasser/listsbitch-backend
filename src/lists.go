@@ -44,3 +44,21 @@ func DeleteListItem(listItemID string) error {
 	}
 	return nil
 }
+
+func DeleteList(listID string) error {
+	err := DB.Where("id = ?", listID).Delete(List{}).Error
+	if err != nil {
+		return err
+	}
+
+	err = DB.Where("list_id = ?", listID).Delete(ListItem{}).Error
+
+	return err
+}
+
+func GetUserLists(userID string) ([]List, error) {
+	lists := []List{}
+	err := DB.Where("author = ?", userID).Find(&lists).Error
+
+	return lists, err
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/joho/godotenv"
@@ -43,6 +44,7 @@ func main() {
 	defer DB.Close()
 	
 	fmt.Print("Listsbit.ch is now online!")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	corsRules := handlers.AllowedOrigins([]string{"*"})
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(corsRules)(r)))
 
 }

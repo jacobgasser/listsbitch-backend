@@ -44,7 +44,6 @@ func main() {
 	defer DB.Close()
 	
 	fmt.Print("Listsbit.ch is now online!")
-	corsRules := handlers.CORS(handlers.AllowedOrigins([]string{"*"}), handlers.AllowCredentials())
-	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(corsRules)(r)))
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(handlers.AllowedOrigins([]string{"*"}), handlers.AllowCredentials())(r)))
 
 }
